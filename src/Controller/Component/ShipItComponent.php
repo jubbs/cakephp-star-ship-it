@@ -36,6 +36,12 @@ class ShipItComponent extends Component
     }
 
 
+    public function getShippingOrder($order_number): array
+    {
+        return $this->apiwrapper->getShippingOrder($order_number);
+    }
+
+
     public function testConnection()
     {
         return $this->apiwrapper->testConnection();

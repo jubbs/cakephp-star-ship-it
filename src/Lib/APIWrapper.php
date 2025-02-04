@@ -14,6 +14,7 @@ use stdClass;
 class APIWrapper extends Component
 {
     private $headers;
+    private $http_timeout = 45;
 
 
     public function __construct()
@@ -52,12 +53,13 @@ class APIWrapper extends Component
 
         try {
             $response = $http->post('https://api.starshipit.com/api/orders', $json_request, [
-                'headers' => $this->headers
+                'headers' => $this->headers,
+                'timeout' => $this->http_timeout
             ]);
         } catch (NetworkException $e) {
             $errors = [[
                 'message' => 'Network Error:',
-                'details' => "Cound not connect to Could not connect to StarShipIt." . $e->getMessage()
+                'details' => "Issues with connection to StarShipIt. " . $e->getMessage()
             ]];
             return ['success' => false, 'errors' => $errors];
         } catch (\Exception $e) {
@@ -118,6 +120,42 @@ class APIWrapper extends Component
             $json_response = $response->getJson();
         }
 
+
+        if (Configure::read('StarShipIt.LOG')) {
+            Log::write('debug', 'StarShipIt Response: ' . serialize($json_response));
+        }
+        return $json_response;
+    }
+    public function getShippingOrder($order_id): array
+    {
+
+        $http = new Client();
+
+        if (Configure::read('StarShipIt.LOG')) {
+            Log::write('debug', 'StarShipIt Request: https://api.starshipit.com/api/orders?order_number='.$order_id);
+        }
+
+        try {
+            $response = $http->get('https://api.starshipit.com/api/orders', ['order_number'=>$order_id],  [
+                'headers' => $this->headers,
+                'timeout' => $this->http_timeout
+            ]);
+
+        } catch (NetworkException $e) {
+            $errors = [[
+                'message' => 'Network Error:',
+                'details' => "Issues with connection to StarShipIt. " . $e->getMessage()
+            ]];
+            return ['success' => false, 'errors' => $errors];
+        } catch (\Exception $e) {
+            $errors = [[
+                'message' => 'General Error',
+                'details' => "There was an error processing the request to StarShipIt: " . $e->getMessage()
+            ]];
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        $json_response = $response->getJson();
 
         if (Configure::read('StarShipIt.LOG')) {
             Log::write('debug', 'StarShipIt Response: ' . serialize($json_response));
